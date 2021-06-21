@@ -2,6 +2,8 @@ import pytest
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from helpers import login_admin
+import re
+
 
 @pytest.fixture
 def driver(request):
@@ -86,3 +88,43 @@ def test_list_sorts_in_zones(driver):
     for i in countries_elems:
         countries_to_check.append(i.find_element_by_css_selector('td:nth-child(3) > a').text)
     check_zones(driver, countries_to_check, zones_url, './td[3]/select/option[@selected="selected"]', 'text')
+
+
+def test_ducks(driver):
+    driver.get("http://localhost/litecart/")
+    driver.find_element_by_css_selector('li.category-1').click()
+    ducks_mp = {}
+    ducks_elem_mp = driver.find_elements_by_css_selector('li.product > a.link')
+    for duck in ducks_elem_mp:
+        duck_name = duck.find_element_by_css_selector('.name').text
+        if duck.find_element_by_css_selector('.image-wrapper > div.sticker').text == 'SALE':
+            duck_price = duck.find_element_by_css_selector('.price-wrapper > .regular-price').text
+            duck_sale_price = duck.find_element_by_css_selector('.price-wrapper > .campaign-price').text
+        else:
+            duck_price = duck.find_element_by_css_selector('.price').text
+            duck_sale_price = ''
+        duck_link = duck.get_attribute('href')
+        ducks_mp[duck_name] = [duck_price, duck_sale_price, duck_link]
+    for duck in ducks_mp:
+        driver.get(ducks_mp[duck][2])
+        assert duck == driver.find_element_by_css_selector('h1.title').text
+        if ducks_mp[duck][1]:
+            price = driver.find_element_by_css_selector('#box-product .regular-price')
+            assert price.text == ducks_mp[duck][0]
+            price_color = price.value_of_css_property('color').split()
+            price_color = [int(re.findall(r'\d+', x)[0]) for x in price_color]
+            assert price_color[0] == price_color[1] == price_color[2]
+            price_size = int(re.findall(r'\d+', price.value_of_css_property('font-size'))[0])
+            campaign_price = driver.find_element_by_css_selector('#box-product .campaign-price')
+            assert campaign_price.text == ducks_mp[duck][1]
+            campaign_price_color = campaign_price.value_of_css_property('color').split()
+            campaign_price_color = [int(re.findall(r'\d+', x)[0]) for x in campaign_price_color]
+            assert 0 == campaign_price_color[1] == campaign_price_color[2]
+            campaign_price_size = int(re.findall(r'\d+', campaign_price.value_of_css_property('font-size'))[0])
+            assert campaign_price_size > price_size
+        else:
+            price = driver.find_element_by_css_selector('#box-product .price')
+            assert price.text == ducks_mp[duck][0]
+            price_color = price.value_of_css_property('color').split()
+            price_color = [int(re.findall(r'\d+', x)[0]) for x in price_color]
+            assert price_color[0] == price_color[1] == price_color[2]
