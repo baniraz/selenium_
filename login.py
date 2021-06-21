@@ -1,6 +1,7 @@
 import pytest
 import time
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 
 
 @pytest.fixture
@@ -26,3 +27,15 @@ def test_login(driver):
                 assert driver.find_element_by_css_selector("#content > h1"), "Заголовок H1 не найден"
     driver.find_element_by_css_selector('[title="Logout"]').click()
     driver.find_element_by_css_selector('div [class="content"]')
+
+
+def test_check_stickers(driver):
+    driver.get("http://localhost/litecart/")
+    ducks = driver.find_elements_by_css_selector('div.image-wrapper')
+    for duck in ducks:
+        try:
+            duck.find_element_by_css_selector('div.sticker')
+        except NoSuchElementException:
+            print('U ' + duck.find_element_by_xpath('../div[@class="name"]').text + ' Нет стикера!')
+    for duck in ducks:
+        duck.find_element_by_css_selector('div.sticker')
