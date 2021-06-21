@@ -1,5 +1,4 @@
 import pytest
-import time
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from helpers import login_admin
@@ -17,8 +16,6 @@ def test_login(driver):
     driver.find_element_by_name("password").send_keys("admin")
     driver.find_element_by_name("remember_me").click()
     driver.find_element_by_name("login").click()
-    # driver.find_element_by_link_text('Appearence').click()
-    # time.sleep(2)
     for section in range(1, len(driver.find_elements_by_css_selector("#app-")) + 1):
         driver.find_element_by_css_selector(f"#app-:nth-child({section})").click()
         if driver.find_elements_by_css_selector(f"#app-:nth-child({section}) li") is not None:
@@ -72,7 +69,6 @@ def check_zones(driver, countries_to_check, backpage, where_is_the_zone, how_to_
 
 def test_list_sorts_in_countries(driver):
     login_admin(driver)
-    driver.get("http://localhost/litecart/admin/?app=countries&doc=countries/")
     countries_url = 'http://localhost/litecart/admin/?app=countries&doc=countries/'
     driver.get(countries_url)
     countries_elems = driver.find_elements_by_css_selector('table.dataTable > tbody > tr.row')
