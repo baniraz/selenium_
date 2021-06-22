@@ -3,6 +3,10 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from helpers import login_admin
 import re
+from selenium.webdriver.common.keys import Keys
+import random
+import string
+import time
 
 
 @pytest.fixture
@@ -126,3 +130,66 @@ def test_ducks(driver):
             price_color = price.value_of_css_property('color').split()
             price_color = [int(re.findall(r'\d+', x)[0]) for x in price_color]
             assert price_color[0] == price_color[1] == price_color[2]
+
+
+def generate_logpass():
+    login = ''
+    password = ''
+    adress = random.choice(string.ascii_letters).upper()
+    postcode = ''
+    city = random.choice(string.ascii_letters).upper()
+    phone = '+1'
+    for _ in range(random.randint(5, 12)):
+        login += random.choice(string.ascii_letters).lower()
+    for _ in range(random.randint(5, 12)):
+        password += random.choice(string.ascii_letters + string.digits)
+    for _ in range(random.randint(4, 8)):
+        adress += random.choice(string.ascii_letters).lower()
+    for _ in range(5):
+        postcode += random.choice(string.digits)
+    for _ in range(random.randint(4, 8)):
+        city += random.choice(string.ascii_letters).lower()
+    for _ in range(10):
+        phone += random.choice(string.digits)
+    adress_ads = [' St.', ' Ave.', ' Blvd.', ' Ln.']
+    adress += random.choice(adress_ads)
+    name_separator = random.randint(2, len(login) - 2)
+    f_name = login[:name_separator].capitalize()
+    l_name = login[name_separator:].capitalize()
+    emails = ['@gmail.com', '@mail.ru', '@yandex.ru']
+    login += random.choice(emails)
+    return login, password, f_name, l_name, adress, postcode, city, phone
+
+
+def test_user_registration(driver):
+    driver.get("http://localhost/litecart/en/create_account")
+    login, password, f_name, l_name, adress, postcode, city, phone = generate_logpass()
+    driver.find_element_by_name('firstname').send_keys(f_name)
+    driver.find_element_by_name('lastname').send_keys(l_name)
+    driver.find_element_by_name('address1').send_keys(adress)
+    driver.find_element_by_name('postcode').send_keys(postcode)
+    driver.find_element_by_name('city').send_keys(city)
+    driver.find_element_by_css_selector('span.select2-container').click()
+    driver.find_element_by_css_selector('input.select2-search__field').send_keys('United States')
+    driver.find_element_by_css_selector('input.select2-search__field').send_keys(Keys.ENTER)
+    driver.find_element_by_name('email').send_keys(login)
+    driver.find_element_by_name('phone').send_keys(phone)
+    driver.find_element_by_name('newsletter').click()
+    driver.find_element_by_name('password').send_keys(password)
+    driver.find_element_by_name('confirmed_password').send_keys(password)
+    driver.find_element_by_name('create_account').click()
+    driver.find_element_by_name('zone_code').click()
+    driver.find_element_by_name('password').send_keys(password)
+    driver.find_element_by_name('confirmed_password').send_keys(password)
+    driver.find_element_by_name('create_account').click()
+    time.sleep(1)
+    driver.implicitly_wait(10)
+    driver.find_element_by_link_text("Logout").click()
+    driver.implicitly_wait(10)
+    driver.find_element_by_name('email').send_keys(login)
+    driver.find_element_by_name('password').send_keys(password)
+    driver.find_element_by_name('login').click()
+    driver.find_element_by_link_text('Logout').click()
+    time.sleep(1)
+    driver.implicitly_wait(10)
+    driver.find_element_by_link_text("Logout").click()
