@@ -30,14 +30,12 @@ def test_login(driver):
 
 def test_check_stickers(driver):
     driver.get("http://localhost/litecart/")
-    ducks = driver.find_elements_by_css_selector('div.image-wrapper')
-    for duck in ducks:
-        try:
-            duck.find_element_by_css_selector('div.sticker')
-        except NoSuchElementException:
-            print('U ' + duck.find_element_by_xpath('../div[@class="name"]').text + ' Нет стикера!')
-    for duck in ducks:
-        duck.find_element_by_css_selector('div.sticker')
+    item = 0
+    while item < len(driver.find_elements_by_css_selector("li.product")):
+        ducks = driver.find_elements_by_css_selector("li.product")[item]
+        label_count = len(ducks.find_elements_by_css_selector("div.sticker"))
+        assert label_count == 1
+        item += 1
 
 
 def sort_checker(li):
