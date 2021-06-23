@@ -1,12 +1,18 @@
 import pytest
-from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
-from helpers import login_admin
-import re
-from selenium.webdriver.common.keys import Keys
 import random
 import string
 import time
+import os
+import datetime
+import re
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait as Wait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
+from helpers import login_admin
+from selenium.webdriver.common.keys import Keys
 
 
 @pytest.fixture
@@ -193,3 +199,53 @@ def test_user_registration(driver):
     time.sleep(1)
     driver.implicitly_wait(10)
     driver.find_element_by_link_text("Logout").click()
+
+
+def generate_product():
+    name = random.choice(string.ascii_letters).upper()
+    code = ''
+    quantity = random.randint(3, 100)
+    price = random.randint(10, 100)
+    for _ in range(random.randint(3, 8)):
+        name += random.choice(string.ascii_letters).lower()
+    for _ in range(5):
+        code += random.choice(string.ascii_letters + string.digits).lower()
+    return name, code, quantity, price
+
+
+def test_add_new_product(driver):
+    login_admin(driver)
+    name, code, quantity, price = generate_product()
+    driver.find_element_by_link_text('Catalog').click()
+    driver.find_element_by_link_text('Add New Product').click()
+    driver.find_element_by_css_selector('input[name="status"][value="1"]').click()
+    driver.find_element_by_name('name[en]').send_keys(name)
+    driver.find_element_by_name('code').send_keys(code)
+    driver.find_element_by_name('quantity').clear()
+    driver.find_element_by_name('quantity').send_keys(quantity)
+    driver.find_element_by_css_selector("[name='new_images[]']").send_keys(os.path.abspath("../product_image.png"))
+    driver.find_element_by_css_selector('input[type="checkbox"][value="1-3"]').click()
+    date = str(datetime.datetime.date(datetime.datetime.today())).replace('-', '')
+    today = date[-2:] + date[4:-2] + date[:4]
+    driver.find_element_by_name('date_valid_from').send_keys(today)
+    driver.find_element_by_name('date_valid_to').send_keys('31122022')
+    driver.find_element_by_link_text('Information').click()
+    Wait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.trumbowyg-editor')))
+    driver.find_element_by_name('keywords').send_keys(code)
+    driver.find_element_by_name('short_description[en]').send_keys(name)
+    driver.find_element_by_css_selector('div.trumbowyg-editor').send_keys(name)
+    driver.find_element_by_name('head_title[en]').send_keys(name)
+    driver.find_element_by_name('meta_description[en]').send_keys(name)
+    driver.find_element_by_link_text('Prices').click()
+    Wait(driver, 10).until(EC.presence_of_element_located((By.ID, 'add-campaign')))
+    driver.find_element_by_name('purchase_price').clear()
+    driver.find_element_by_name('purchase_price').send_keys(price)
+    driver.find_element_by_name('prices[USD]').send_keys(price)
+    driver.find_element_by_name('prices[EUR]').send_keys(price)
+    driver.find_element_by_name('save').click()
+    Wait(driver, 10).until(EC.presence_of_element_located((By.NAME, 'catalog_form')))
+    products_e = driver.find_elements_by_css_selector('table.dataTable > tbody > tr.row > td:nth-child(3) > a')
+    products = []
+    for i in products_e:
+        products.append(i.get_attribute('textContent'))
+    assert name in products
