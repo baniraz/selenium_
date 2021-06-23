@@ -5,14 +5,13 @@ import time
 import os
 import datetime
 import re
-
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
 from helpers import login_admin
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.wait import WebDriverWait
 
 
 @pytest.fixture
@@ -249,3 +248,23 @@ def test_add_new_product(driver):
     for i in products_e:
         products.append(i.get_attribute('textContent'))
     assert name in products
+
+
+def test_deiete_ducks(driver):
+    driver.get("http://localhost/litecart/en/")
+    for i in range(1, 4):
+        products = driver.find_elements_by_css_selector("div#box-most-popular ul.listing-wrapper.products li:nth-child(1)")
+        for product in products:
+            product.click()
+            driver.find_element_by_css_selector("[name=add_cart_product]").click()
+            wait = WebDriverWait(driver, 15)
+            wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, "span.quantity"), str(i)))
+        driver.get("http://localhost/litecart/en/")
+    driver.get("http://localhost/litecart/en/checkout")
+    driver.find_element_by_css_selector("ul.shortcuts li:nth-child(1)").click()
+    time.sleep(1)
+    table_of_products = driver.find_elements_by_css_selector("td.unit-cost")
+    for i in range(len(table_of_products)):
+        driver.find_element_by_name("remove_cart_item").click()
+        wait = WebDriverWait(driver, 15)
+        wait.until(EC.staleness_of(table_of_products[i]))
